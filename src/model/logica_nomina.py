@@ -1,7 +1,3 @@
-
-
-
-
 SMMLV = 1_423_500                       # Salario mínimo mensual de referencia
 AUXILIO_TRANSPORTE = 200_000            # Auxilio de transporte mensual de referencia
 TOPE_AUXILIO_TRANSPORTE = 2 * SMMLV     # El auxilio solo aplica hasta 2 SMMLV
