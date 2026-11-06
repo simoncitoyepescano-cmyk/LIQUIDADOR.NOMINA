@@ -33,7 +33,7 @@ class SalarioInvalido(Exception):
     no se puede liquidar la nómina sin un salario base válido."""
     def __init__(self):
         super().__init__(
-            "LIQUIDAR NOMINA: Valor Nómina. No es posible liquidar la nómina. "
+            f"No es posible liquidar la nómina. \n"
             "Ingrese un salario base mayor que cero."
         )
 
@@ -43,7 +43,7 @@ class HorasInvalidas(Exception):
     Indica que no se puede liquidar la nómina con horas inválidas."""
     def __init__(self, tipo_hora="horas"):
         super().__init__(
-            f"LIQUIDAR NOMINA: Valor Nómina. No es posible liquidar la nómina. "
+            f"No es posible liquidar la nómina. \n"
             f"La cantidad de {tipo_hora} no puede ser negativa."
         )
 
@@ -53,7 +53,7 @@ class DiasInvalidos(Exception):
     (0 a 30, ya que en Colombia el mes laboral comercial tiene 30 días)."""
     def __init__(self):
         super().__init__(
-            "LIQUIDAR NOMINA: Valor Nómina. No es posible liquidar la nómina. "
+            "No es posible liquidar la nómina. \n"
             "Los días trabajados deben estar entre 0 y 30."
         )
 
