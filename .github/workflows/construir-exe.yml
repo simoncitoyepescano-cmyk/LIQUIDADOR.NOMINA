@@ -1,0 +1,82 @@
+name: Publicar ejecutable Windows (Release)
+
+# Se ejecuta de dos formas:
+#  1. Manual: pestaña Actions -> "Publicar ejecutable Windows (Release)" -> Run workflow (escribir la versión, ej. v1.0.0)
+#  2. Automática: al subir un tag que empiece por "v" (git tag v1.0.0 && git push origin v1.0.0)
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Versión a publicar (ej. v1.0.0)"
+        required: true
+        default: "v1.0.0"
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write   # necesario para crear el Release y subir el .exe
+
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 30   # por si algo se cuelga, que no se quede horas
+    env:
+      # La máquina de GitHub no tiene tarjeta gráfica: con "mock" Kivy no muestra el aviso
+      # de "OpenGL 2.0 no encontrado" que dejaba la compilación esperando para siempre.
+      # Solo afecta la compilación; el .exe usa la tarjeta gráfica normal del PC.
+      KIVY_GL_BACKEND: "mock"
+      KIVY_NO_ARGS: "1"
+      KIVY_NO_CONSOLELOG: "1"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Instalar dependencias
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-exe.txt
+
+      - name: Generar Nominapp.exe
+        run: pyinstaller --clean --noconfirm Nominapp.spec
+
+      - name: Preparar paquete
+        shell: pwsh
+        run: |
+          Compress-Archive -Path dist/* -DestinationPath Nominapp-windows.zip
+
+      - name: Guardar el .exe en la carpeta del proyecto (rama main)
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin main
+          git checkout -B main origin/main
+          cp dist/Nominapp.exe Nominapp.exe
+          git add -f Nominapp.exe
+          if git diff --cached --quiet; then
+            echo "El .exe no cambió; no hay nada que subir."
+          else
+            git commit -m "Actualizar Nominapp.exe (${{ github.event.inputs.version || github.ref_name }})"
+            git push origin main
+          fi
+
+      - name: Publicar Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.inputs.version || github.ref_name }}
+          name: Nominapp ${{ github.event.inputs.version || github.ref_name }}
+          make_latest: true
+          body: |
+            ## Descarga
+            - **Nominapp.exe**: el programa (interfaz Kivy, con sonidos incluidos). No requiere instalar Python.
+
+            ## Cómo usarlo
+            Descargue `Nominapp.exe` y ábralo con doble clic.
+
+            > Si Windows muestra "Windows protegió su PC", haga clic en **Más información → Ejecutar de todas formas** (el programa no está firmado digitalmente).
+          files: |
+            dist/Nominapp.exe
+            Nominapp-windows.zip
